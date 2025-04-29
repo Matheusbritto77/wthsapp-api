@@ -73,8 +73,26 @@ const doc = {
     ForbiddenResponse: {
       success: false,
       error: 'Invalid API key'
+    },
+    ListSessionsResponse: { // Nova definição para a resposta da listagem de sessões
+      success: true,
+      message: 'Sessions retrieved successfully',
+      sessions: [
+        {
+          sessionId: 'session1',
+          status: 'ready',
+          createdAt: '2023-10-01T12:00:00Z'
+        },
+        {
+          sessionId: 'session2',
+          status: 'initializing',
+          createdAt: '2023-10-01T12:05:00Z'
+        }
+      ]
     }
   }
 }
+
+
 
 swaggerAutogen(outputFile, endpointsFiles, doc)

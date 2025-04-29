@@ -363,6 +363,66 @@ const terminateAllSessions = async (req, res) => {
   }
 }
 
+
+
+
+  
+  /**
+   * Lists all active sessions.
+   *
+   * @function
+   * @async
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @returns {Promise<void>}
+   * @throws {Error} If there was an error listing the sessions.
+   */
+  const listSessions = async (req, res) => {
+    // #swagger.summary = 'List all sessions'
+    // #swagger.description = 'Lists all active sessions stored in the system.'
+    try {
+      const { sessions } = require('../sessions')
+      // Obtém todas as sessões do Map ou estrutura de dados
+      const sessionList = Array.from(sessions.keys()).map(sessionId => {
+        const session = sessions.get(sessionId)
+        return {
+          sessionId,
+          status: session ? (session.isReady ? 'ready' : 'initializing') : 'unknown',
+          createdAt: session?.createdAt || 'unknown'
+        }
+      })
+  
+      /* #swagger.responses[200] = {
+        description: "List of active sessions.",
+        content: {
+          "application/json": {
+            schema: { "$ref": "#/definitions/ListSessionsResponse" }
+          }
+        }
+      }
+      */
+      res.json({
+        success: true,
+        message: 'Sessions retrieved successfully',
+        sessions: sessionList
+      })
+    } catch (error) {
+      /* #swagger.responses[500] = {
+        description: "Server Failure.",
+        content: {
+          "application/json": {
+            schema: { "$ref": "#/definitions/ErrorResponse" }
+          }
+        }
+      }
+      */
+      console.log('listSessions ERROR', error)
+      sendErrorResponse(res, 500, error.message)
+    }
+  }
+  
+  
+
 module.exports = {
   startSession,
   statusSession,
@@ -371,5 +431,7 @@ module.exports = {
   restartSession,
   terminateSession,
   terminateInactiveSessions,
-  terminateAllSessions
+  terminateAllSessions,
+  listSessions
+  
 }

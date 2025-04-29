@@ -569,6 +569,53 @@
         ]
       }
     },
+
+    "/session/list": {
+  "get": {
+    "tags": [
+      "Session"
+    ],
+    "summary": "List all sessions",
+    "description": "Lists all active sessions stored in the system.",
+    "responses": {
+      "200": {
+        "description": "List of active sessions.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ListSessionsResponse"
+            }
+          }
+        }
+      },
+      "403": {
+        "description": "Forbidden.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ForbiddenResponse"
+            }
+          }
+        }
+      },
+      "500": {
+        "description": "Server Failure.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "security": [
+      {
+        "apiKeyAuth": []
+      }
+    ]
+  }
+},
     "/client/getClassInfo/{sessionId}": {
       "get": {
         "tags": [
@@ -7498,146 +7545,182 @@
     }
   },
   "components": {
-    "schemas": {
-      "StartSessionResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "example": true
-          },
-          "message": {
-            "type": "string",
-            "example": "Session initiated successfully"
-          }
+  "schemas": {
+    "StartSessionResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "example": true
         },
-        "xml": {
-          "name": "StartSessionResponse"
+        "message": {
+          "type": "string",
+          "example": "Session initiated successfully"
         }
       },
-      "StatusSessionResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "example": true
-          },
-          "state": {
-            "type": "string",
-            "example": "CONNECTED"
-          },
-          "message": {
-            "type": "string",
-            "example": "session_connected"
-          }
-        },
-        "xml": {
-          "name": "StatusSessionResponse"
-        }
-      },
-      "RestartSessionResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "example": true
-          },
-          "message": {
-            "type": "string",
-            "example": "Restarted successfully"
-          }
-        },
-        "xml": {
-          "name": "RestartSessionResponse"
-        }
-      },
-      "TerminateSessionResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "example": true
-          },
-          "message": {
-            "type": "string",
-            "example": "Logged out successfully"
-          }
-        },
-        "xml": {
-          "name": "TerminateSessionResponse"
-        }
-      },
-      "TerminateSessionsResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "example": true
-          },
-          "message": {
-            "type": "string",
-            "example": "Flush completed successfully"
-          }
-        },
-        "xml": {
-          "name": "TerminateSessionsResponse"
-        }
-      },
-      "ErrorResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "example": false
-          },
-          "error": {
-            "type": "string",
-            "example": "Some server error"
-          }
-        },
-        "xml": {
-          "name": "ErrorResponse"
-        }
-      },
-      "NotFoundResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "example": false
-          },
-          "error": {
-            "type": "string",
-            "example": "Some server error"
-          }
-        },
-        "xml": {
-          "name": "NotFoundResponse"
-        }
-      },
-      "ForbiddenResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "example": false
-          },
-          "error": {
-            "type": "string",
-            "example": "Invalid API key"
-          }
-        },
-        "xml": {
-          "name": "ForbiddenResponse"
-        }
+      "xml": {
+        "name": "StartSessionResponse"
       }
     },
-    "securitySchemes": {
-      "apiKeyAuth": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "x-api-key"
+    "StatusSessionResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "example": true
+        },
+        "state": {
+          "type": "string",
+          "example": "CONNECTED"
+        },
+        "message": {
+          "type": "string",
+          "example": "session_connected"
+        }
+      },
+      "xml": {
+        "name": "StatusSessionResponse"
+      }
+    },
+    "RestartSessionResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "example": true
+        },
+        "message": {
+          "type": "string",
+          "example": "Restarted successfully"
+        }
+      },
+      "xml": {
+        "name": "RestartSessionResponse"
+      }
+    },
+    "TerminateSessionResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "example": true
+        },
+        "message": {
+          "type": "string",
+          "example": "Logged out successfully"
+        }
+      },
+      "xml": {
+        "name": "TerminateSessionResponse"
+      }
+    },
+    "TerminateSessionsResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "example": true
+        },
+        "message": {
+          "type": "string",
+          "example": "Flush completed successfully"
+        }
+      },
+      "xml": {
+        "name": "TerminateSessionsResponse"
+      }
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "example": false
+        },
+        "error": {
+          "type": "string",
+          "example": "Some server error"
+        }
+      },
+      "xml": {
+        "name": "ErrorResponse"
+      }
+    },
+    "NotFoundResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "example": false
+        },
+        "error": {
+          "type": "string",
+          "example": "Some server error"
+        }
+      },
+      "xml": {
+        "name": "NotFoundResponse"
+      }
+    },
+    "ForbiddenResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "example": false
+        },
+        "error": {
+          "type": "string",
+          "example": "Invalid API key"
+        }
+      },
+      "xml": {
+        "name": "ForbiddenResponse"
+      }
+    },
+    "ListSessionsResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "example": true
+        },
+        "message": {
+          "type": "string",
+          "example": "Sessions retrieved successfully"
+        },
+        "sessions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string",
+                "example": "session1"
+              },
+              "status": {
+                "type": "string",
+                "example": "ready"
+              },
+              "createdAt": {
+                "type": "string",
+                "example": "2023-10-01T12:00:00Z"
+              }
+            }
+          }
+        }
+      },
+      "xml": {
+        "name": "ListSessionsResponse"
       }
     }
+  },
+  "securitySchemes": {
+    "apiKeyAuth": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "x-api-key"
+    }
   }
+}
 }
