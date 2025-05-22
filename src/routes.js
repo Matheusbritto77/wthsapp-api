@@ -92,7 +92,8 @@ clientRouter.post('/unarchiveChat/:sessionId', [middleware.sessionNameValidation
 clientRouter.post('/unmuteChat/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], clientController.unmuteChat)
 clientRouter.post('/unpinChat/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], clientController.unpinChat)
 clientRouter.get('/getWWebVersion/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], clientController.getWWebVersion)
-
+clientRouter.get('/getlistGrup/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], clientController.listGroups)
+clientRouter.post('/postStatus/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], clientController.postStatus);
 /**
  * ================
  * CHAT ENDPOINTS

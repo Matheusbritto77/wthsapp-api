@@ -216,6 +216,164 @@
         ]
       }
     },
+    "/client/postStatus/{sessionId}": {
+  "post": {
+    "tags": [
+      "Client"
+    ],
+    "summary": "Post a status update",
+    "description": "Posts a status update (e.g., text, image, or video) for the given session ID, with an optional text caption for media.",
+    "parameters": [
+      {
+        "name": "sessionId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Unique identifier for the session (alphanumeric and - allowed)",
+        "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+      }
+    ],
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "contentType": {
+                "type": "string",
+                "description": "The type of status content, must be one of the following: string, MessageMedia, MessageMediaFromURL",
+                "example": "MessageMedia"
+              },
+              "content": {
+                "type": "object",
+                "description": "The content of the status, can be a string or an object for media",
+                "example": {
+                  "mimetype": "image/jpeg",
+                  "data": "base64ImageDataHere",
+                  "filename": "status.jpg"
+                }
+              },
+              "caption": {
+                "type": "string",
+                "description": "The text description or caption for media content (optional)",
+                "example": "Check out this amazing view!"
+              },
+              "options": {
+                "type": "object",
+                "description": "Additional options for posting the status",
+                "example": {
+                  "backgroundColor": "#FFFFFF",
+                  "font": 1
+                }
+              }
+            },
+            "required": ["contentType", "content"]
+          },
+          "examples": {
+            "TextStatus": {
+              "value": {
+                "contentType": "string",
+                "content": "My status update!"
+              }
+            },
+            "ImageStatus": {
+              "value": {
+                "contentType": "MessageMedia",
+                "content": {
+                  "mimetype": "image/jpeg",
+                  "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+                  "filename": "status.jpg"
+                },
+                "caption": "Amazing view!"
+              }
+            },
+            "ImageFromURLStatus": {
+              "value": {
+                "contentType": "MessageMediaFromURL",
+                "content": "https://example.com/image.jpg",
+                "caption": "Look at this!"
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "200": {
+        "description": "Status posted successfully.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "description": "Indicates if the request was successful",
+                  "example": true
+                },
+                "status": {
+                  "type": "object",
+                  "description": "Details of the posted status",
+                  "example": {
+                    "id": "status_id_here"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "400": {
+        "description": "Bad Request. Invalid contentType or missing required fields.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "403": {
+        "description": "Forbidden.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ForbiddenResponse"
+            }
+          }
+        }
+      },
+      "404": {
+        "description": "Not Found. Session not found.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/NotFoundResponse"
+            }
+          }
+        }
+      },
+      "500": {
+        "description": "Server Failure. An error occurred while posting the status.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "security": [
+      {
+        "apiKeyAuth": []
+      }
+    ]
+  }
+},
     "/session/qr/{sessionId}": {
       "get": {
         "tags": [
@@ -2763,6 +2921,109 @@
         }
       }
     },
+    "/client/getlistGrup/{sessionId}": {
+  "get": {
+    "tags": [
+      "Client"
+    ],
+    "description": "Retrieves a list of groups the client is a participant of, limited to the first 100 chats.",
+    "parameters": [
+      {
+        "name": "sessionId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Unique identifier for the session (alphanumeric and - allowed)",
+        "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "description": "Indicates if the request was successful",
+                  "example": true
+                },
+                "groups": {
+                  "type": "array",
+                  "description": "List of groups the client is a participant of",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "The unique ID of the group",
+                        "example": "123456789@g.us"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "The name of the group",
+                        "example": "Grupo de Amigos"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403": {
+        "description": "Forbidden.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ForbiddenResponse"
+            }
+          }
+        }
+      },
+      "404": {
+        "description": "Not Found.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/NotFoundResponse"
+            }
+          }
+        }
+      },
+      "422": {
+        "description": "Unprocessable Entity.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "500": {
+        "description": "Internal Server Error.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "security": [
+      {
+        "apiKeyAuth": []
+      }
+    ]
+  }
+},
     "/client/sendPresenceAvailable/{sessionId}": {
       "post": {
         "tags": [

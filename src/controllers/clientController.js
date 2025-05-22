@@ -307,7 +307,7 @@ const getContacts = async (req, res) => {
 }
 
 /**
- * Retrieve all chats for the given session ID.
+ * Retrieve all chats for the given session ID, limited to the first 100 chats.
  *
  * @function
  * @async
@@ -322,13 +322,17 @@ const getContacts = async (req, res) => {
  */
 const getChats = async (req, res) => {
   try {
-    const client = sessions.get(req.params.sessionId)
-    const chats = await client.getChats()
-    res.json({ success: true, chats })
+    const client = sessions.get(req.params.sessionId);
+    const chats = await client.getChats();
+    
+    // Limita aos primeiros 100 chats para evitar processar chats muito antigos
+    const limitedChats = chats.slice(0, 10);
+    
+    res.json({ success: true, chats: limitedChats });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message)
+    sendErrorResponse(res, 500, error.message);
   }
-}
+};
 
 /**
  * Returns the profile picture URL for a given contact ID.
@@ -1275,6 +1279,144 @@ const setProfilePicture = async (req, res) => {
   }
 }
 
+
+
+/**
+ * Lists all groups for the given session ID, limited to the first 100 chats.
+ *
+ * @function
+ * @async
+ *
+ * @param {Object} req - The request object.
+ * @param {string} req.params.sessionId - The session ID.
+ * @param {Object} res - The response object.
+ *
+ * @returns {Promise<void>} A Promise that resolves when the operation is complete.
+ *
+ * @throws {Error} If the operation fails, an error is thrown.
+ */
+const listGroups = async (req, res) => {
+  try {
+    const client = sessions.get(req.params.sessionId);
+    const chats = await client.getChats();
+    
+    // Limita aos primeiros 100 chats para evitar processar chats muito antigos
+    const limitedChats = chats.slice(0, 100);
+    
+    // Filtra apenas os chats que são grupos (baseado em id.server === 'g.us')
+    const groups = limitedChats.filter(chat => chat.id.server === 'g.us');
+    
+    // Mapeia os grupos para retornar apenas o user (id.user) e o name
+    const groupList = groups.map(group => ({
+      user: group.id.user, // Pega o valor de id.user
+      name: group.name // Pega o nome do grupo
+    }));
+    
+    res.json({ success: true, groups: groupList });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+
+  
+}
+
+/**
+ * Posts a status update (e.g., image, video, or text) for the given session ID, with an optional text description for media.
+ *
+ * @async
+ * @function postStatus
+ * @param {Object} req - The request object containing the content and content type.
+ * @param {string} req.body.contentType - The type of content to post (e.g., 'string', 'MessageMedia', 'MessageMediaFromURL').
+ * @param {string|Object} req.body.content - The content of the status (text or media data).
+ * @param {string} [req.body.caption] - The text description or caption for media content (optional).
+ * @param {Object} [req.body.options] - Additional options for the status post.
+ * @param {string} req.params.sessionId - The session ID of the WhatsApp client.
+ * @param {Object} res - The response object.
+ * @returns {Promise<Object>} Returns a JSON object with a success flag and the sent status data.
+ * @throws {Error} If there is an error while posting the status.
+ */
+const postStatus = async (req, res) => {
+  /*
+    #swagger.requestBody = {
+      required: true,
+      content: {
+        "application/json": {
+          schema: {
+            type: 'object',
+            properties: {
+              contentType: {
+                type: 'string',
+                description: 'The type of status content, must be one of the following: string, MessageMedia, MessageMediaFromURL',
+                example: 'MessageMedia'
+              },
+              content: {
+                type: 'object',
+                description: 'The content of the status, can be a string or an object for media',
+                example: { mimetype: 'image/jpeg', data: 'base64ImageDataHere', filename: 'status.jpg' }
+              },
+              caption: {
+                type: 'string',
+                description: 'The text description or caption for media content (optional)',
+                example: 'Check out this photo!'
+              },
+              options: {
+                type: 'object',
+                description: 'Additional options for posting the status',
+                example: { backgroundColor: '#FFFFFF', font: 1 }
+              }
+            }
+          },
+          examples: {
+            string: { value: { contentType: 'string', content: 'My status update!' } },
+            MessageMedia: { value: { contentType: 'MessageMedia', content: { mimetype: 'image/jpeg', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', filename: 'status.jpg' }, caption: 'Amazing view!' } },
+            MessageMediaFromURL: { value: { contentType: 'MessageMediaFromURL', content: 'https://example.com/image.jpg', caption: 'Look at this!' } }
+          }
+        }
+      }
+    }
+  */
+  try {
+    const { contentType, content, caption, options = {} } = req.body;
+    const client = sessions.get(req.params.sessionId);
+
+    // O chatId especial para status no WhatsApp
+    const statusChatId = 'status@broadcast';
+
+    // Se houver uma caption fornecida, adiciona às options (para mídia)
+    const finalOptions = { ...options };
+    if (caption && contentType !== 'string') {
+      finalOptions.caption = caption;
+    }
+
+    let statusOut;
+    switch (contentType) {
+      case 'string':
+        statusOut = await client.sendMessage(statusChatId, content, finalOptions);
+        break;
+      case 'MessageMediaFromURL': {
+        const messageMediaFromURL = await MessageMedia.fromUrl(content, { unsafeMime: true });
+        statusOut = await client.sendMessage(statusChatId, messageMediaFromURL, finalOptions);
+        break;
+      }
+      case 'MessageMedia': {
+        const messageMedia = new MessageMedia(content.mimetype, content.data, content.filename, content.filesize);
+        statusOut = await client.sendMessage(statusChatId, messageMedia, finalOptions);
+        break;
+      }
+      default:
+        return sendErrorResponse(res, 400, 'contentType invalid, must be string, MessageMedia, or MessageMediaFromURL');
+    }
+
+    res.json({ success: true, status: statusOut });
+  } catch (error) {
+    console.log(error);
+    sendErrorResponse(res, 500, error.message);
+  }
+}
+
+
+
+
 module.exports = {
   getClassInfo,
   acceptInvite,
@@ -1310,5 +1452,7 @@ module.exports = {
   unarchiveChat,
   unmuteChat,
   unpinChat,
-  getWWebVersion
+  getWWebVersion,
+  listGroups,
+  postStatus 
 }
