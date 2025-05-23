@@ -12,7 +12,7 @@ const { sendErrorResponse } = require('../utils')
  * @param {string} req.body.chatId - The chat id where the message will be sent
  * @param {string|Object} req.body.content - The message content to be sent, can be a string or an object containing the MessageMedia data
  * @param {string} req.body.contentType - The type of the message content, must be one of the following: 'string', 'MessageMedia', 'MessageMediaFromURL', 'Location', 'Buttons', or 'List'
- * @param {Object} req.body.options - Additional options to be passed to the WhatsApp API
+ * @param {Object} req.body.options - Additional options to be passed to the WhatsApp API, including caption for media
  * @param {string} req.params.sessionId - The id of the WhatsApp session to be used
  * @param {Object} res - The response object
  * @returns {Object} - The response object containing a success flag and the sent message data
@@ -41,14 +41,14 @@ const sendMessage = async (req, res) => {
               },
               options: {
                 type: 'object',
-                description: 'The message send options',
+                description: 'The message send options, including caption for media',
               }
             }
           },
           examples: {
             string: { value: { chatId: '6281288888888@c.us', contentType: 'string', content: 'Hello World!' } },
-            MessageMedia: { value: { chatId: '6281288888888@c.us', contentType: 'MessageMedia', content: { mimetype: 'image/jpeg', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', filename: 'image.jpg' } } },
-            MessageMediaFromURL: { value: { chatId: '6281288888888@c.us', contentType: 'MessageMediaFromURL', content: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Example' } },
+            MessageMedia: { value: { chatId: '6281288888888@c.us', contentType: 'MessageMedia', content: { mimetype: 'image/jpeg', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', filename: 'image.jpg' }, options: { caption: 'Check out this image!' } } },
+            MessageMediaFromURL: { value: { chatId: '6281288888888@c.us', contentType: 'MessageMediaFromURL', content: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Example', options: { caption: 'Here is a QR code!' } } },
             Location: { value: { chatId: '6281288888888@c.us', contentType: 'Location', content: { latitude: -6.2, longitude: 106.8, description: 'Jakarta' } } },
             Buttons: { value: { chatId: '6281288888888@c.us', contentType: 'Buttons', content: { body: 'Hello World!', buttons: [{ body: 'button 1' }], title: 'Hello World!', footer: 'Hello World!' } } },
             List: {
@@ -67,66 +67,71 @@ const sendMessage = async (req, res) => {
   */
 
   try {
-    const { chatId, content, contentType, options } = req.body
-    const client = sessions.get(req.params.sessionId)
+    const { chatId, content, contentType, options = {} } = req.body;
+    const client = sessions.get(req.params.sessionId);
 
-    let messageOut
+    let messageOut;
     switch (contentType) {
       case 'string':
         if (options?.media) {
-          const media = options.media
-          media.filename = null
-          media.filesize = null
-          options.media = new MessageMedia(media.mimetype, media.data, media.filename, media.filesize)
+          const media = options.media;
+          media.filename = null;
+          media.filesize = null;
+          options.media = new MessageMedia(media.mimetype, media.data, media.filename, media.filesize);
         }
-        messageOut = await client.sendMessage(chatId, content, options)
-        break
+        messageOut = await client.sendMessage(chatId, content, options);
+        break;
       case 'MessageMediaFromURL': {
-        const messageMediaFromURL = await MessageMedia.fromUrl(content, { unsafeMime: true })
-        messageOut = await client.sendMessage(chatId, messageMediaFromURL, options)
-        break
+        const messageMediaFromURL = await MessageMedia.fromUrl(content, { unsafeMime: true });
+        // Adiciona o caption ao options, se fornecido
+        const sendOptions = { ...options, caption: options.caption || '' };
+        messageOut = await client.sendMessage(chatId, messageMediaFromURL, sendOptions);
+        break;
       }
       case 'MessageMedia': {
-        const messageMedia = new MessageMedia(content.mimetype, content.data, content.filename, content.filesize)
-        messageOut = await client.sendMessage(chatId, messageMedia, options)
-        break
+        const messageMedia = new MessageMedia(content.mimetype, content.data, content.filename, content.filesize);
+        // Adiciona o caption ao options, se fornecido
+        const sendOptions = { ...options, caption: options.caption || '' };
+        messageOut = await client.sendMessage(chatId, messageMedia, sendOptions);
+        break;
       }
       case 'Location': {
-        const location = new Location(content.latitude, content.longitude, content.description)
-        messageOut = await client.sendMessage(chatId, location, options)
-        break
+        const location = new Location(content.latitude, content.longitude, content.description);
+        messageOut = await client.sendMessage(chatId, location, options);
+        break;
       }
       case 'Buttons': {
-        const buttons = new Buttons(content.body, content.buttons, content.title, content.footer)
-        messageOut = await client.sendMessage(chatId, buttons, options)
-        break
+        const buttons = new Buttons(content.body, content.buttons, content.title, content.footer);
+        messageOut = await client.sendMessage(chatId, buttons, options);
+        break;
       }
       case 'List': {
-        const list = new List(content.body, content.buttonText, content.sections, content.title, content.footer)
-        messageOut = await client.sendMessage(chatId, list, options)
-        break
+        const list = new List(content.body, content.buttonText, content.sections, content.title, content.footer);
+        messageOut = await client.sendMessage(chatId, list, options);
+        break;
       }
       case 'Contact': {
-        const contactId = content.contactId.endsWith('@c.us') ? content.contactId : `${content.contactId}@c.us`
-        const contact = await client.getContactById(contactId)
-        messageOut = await client.sendMessage(chatId, contact, options)
-        break
+        const contactId = content.contactId.endsWith('@c.us') ? content.contactId : `${content.contactId}@c.us`;
+        const contact = await client.getContactById(contactId);
+        messageOut = await client.sendMessage(chatId, contact, options);
+        break;
       }
       case 'Poll': {
-        const poll = new Poll(content.pollName, content.pollOptions, content.options)
-        messageOut = await client.sendMessage(chatId, poll, options)
-        break
+        const poll = new Poll(content.pollName, content.pollOptions, content.options);
+        messageOut = await client.sendMessage(chatId, poll, options);
+        break;
       }
       default:
-        return sendErrorResponse(res, 404, 'contentType invalid, must be string, MessageMedia, MessageMediaFromURL, Location, Buttons, List, Contact or Poll')
+        return sendErrorResponse(res, 404, 'contentType invalid, must be string, MessageMedia, MessageMediaFromURL, Location, Buttons, List, Contact or Poll');
     }
 
-    res.json({ success: true, message: messageOut })
+    res.json({ success: true, message: messageOut });
   } catch (error) {
-    console.log(error)
-    sendErrorResponse(res, 500, error.message)
+    console.log(error);
+    sendErrorResponse(res, 500, error.message);
   }
 }
+
 
 /**
  * Get session information for a given sessionId
