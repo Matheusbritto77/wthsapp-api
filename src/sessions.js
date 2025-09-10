@@ -1,9 +1,14 @@
 const { Client, LocalAuth } = require('whatsapp-web.js')
+const Util = require('whatsapp-web.js/src/util/Util')
 const fs = require('fs')
 const path = require('path')
+const ffmpegPath = require('ffmpeg-static')
 const sessions = new Map()
 const { baseWebhookURL, sessionFolderPath, maxAttachmentSize, setMessagesAsSeen, webVersion, webVersionCacheType, recoverSessions } = require('./config')
 const { triggerWebhook, waitForNestedObject, checkIfEventisEnabled } = require('./utils')
+
+// Configure ffmpeg-static for whatsapp-web.js
+Util.setFfmpegPath(ffmpegPath)
 
 // Function to validate if the session is ready
 const validateSession = async (sessionId) => {
@@ -96,11 +101,13 @@ const setupSession = (sessionId) => {
     localAuth.logout = () => { }
 
     const clientOptions = {
+      
       puppeteer: {
         executablePath: process.env.CHROME_BIN || null,
         // headless: false,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage']
       },
+      ffmpegPath: ffmpegPath,
       userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
       authStrategy: localAuth
     }
