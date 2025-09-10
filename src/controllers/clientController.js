@@ -303,11 +303,36 @@ const setStatus = async (req, res) => {
  */
 const getContacts = async (req, res) => {
   try {
-    const client = sessions.get(req.params.sessionId)
-    const contacts = await client.getContacts()
-    res.json({ success: true, contacts })
+    const client = sessions.get(req.params.sessionId);
+    
+    // Obter parâmetros de paginação
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100); // Máximo de 100 contatos por página
+    const offset = (page - 1) * limit;
+    
+    // Obter todos os contatos
+    const allContacts = await client.getContacts();
+    
+    // Aplicar paginação
+    const paginatedContacts = allContacts.slice(offset, offset + limit);
+    
+    // Preparar resposta com metadados de paginação
+    const totalPages = Math.ceil(allContacts.length / limit);
+    
+    res.json({
+      success: true,
+      contacts: paginatedContacts,
+      pagination: {
+        page: page,
+        limit: limit,
+        total: allContacts.length,
+        totalPages: totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message)
+    sendErrorResponse(res, 500, error.message);
   }
 }
 
